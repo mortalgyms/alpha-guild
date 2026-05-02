@@ -91,7 +91,6 @@
     @apply border-border;
   }
   html {
-    @apply dark;
     color-scheme: dark;
   }
   body {
