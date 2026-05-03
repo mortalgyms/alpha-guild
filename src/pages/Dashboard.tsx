@@ -1,6 +1,7 @@
 import { SectionHeader } from "@/components/trading/SectionHeader";
 import { TickerCard } from "@/components/trading/TickerCard";
 import { Sparkline } from "@/components/trading/Sparkline";
+import { LiveTickerStrip } from "@/components/trading/LiveTickerStrip";
 import { aiSignals, economicEvents, generateSeries, heatmapSectors, indices, watchlist } from "@/lib/mockData";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,9 @@ export default function Dashboard() {
           </div>
         }
       />
+
+      {/* Live quotes strip (Finnhub) */}
+      <LiveTickerStrip />
 
       {/* Indices strip */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
