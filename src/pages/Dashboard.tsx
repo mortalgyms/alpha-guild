@@ -32,6 +32,9 @@ export default function Dashboard() {
         }
       />
 
+      {/* Live quotes strip (Finnhub) */}
+      <LiveTickerStrip />
+
       {/* Indices strip */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {indices.map((t) => (
