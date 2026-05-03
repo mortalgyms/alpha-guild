@@ -4,6 +4,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Markets from "./pages/Markets";
 import Signals from "./pages/Signals";
@@ -27,24 +30,33 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/markets" element={<Markets />} />
-            <Route path="/signals" element={<Signals />} />
-            <Route path="/portfolio" element={<Portfolio />} />
-            <Route path="/journal" element={<Journal />} />
-            <Route path="/guilds" element={<Guilds />} />
-            <Route path="/messages" element={<Messages />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/quests" element={<Quests />} />
-            <Route path="/learn" element={<Learn />} />
-            <Route path="/notifications" element={<Notifications />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/profile" element={<Profile />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppLayout />
+                </ProtectedRoute>
+              }
+            >
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/markets" element={<Markets />} />
+              <Route path="/signals" element={<Signals />} />
+              <Route path="/portfolio" element={<Portfolio />} />
+              <Route path="/journal" element={<Journal />} />
+              <Route path="/guilds" element={<Guilds />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/quests" element={<Quests />} />
+              <Route path="/learn" element={<Learn />} />
+              <Route path="/notifications" element={<Notifications />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/profile" element={<Profile />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

@@ -1,46 +1,79 @@
 import { SectionHeader } from "@/components/trading/SectionHeader";
 import { TickerCard } from "@/components/trading/TickerCard";
-import { Sparkline } from "@/components/trading/Sparkline";
-import { generateSeries, watchlist } from "@/lib/mockData";
+import { CandleChart } from "@/components/trading/CandleChart";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Crosshair, Layers, LineChart, Maximize2, Settings2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { useLiveQuotes } from "@/hooks/useLiveQuotes";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const UNIVERSE = [
+  { symbol: "AAPL", name: "Apple", market: "Stocks" as const },
+  { symbol: "NVDA", name: "NVIDIA", market: "Stocks" as const },
+  { symbol: "MSFT", name: "Microsoft", market: "Stocks" as const },
+  { symbol: "TSLA", name: "Tesla", market: "Stocks" as const },
+  { symbol: "AMZN", name: "Amazon", market: "Stocks" as const },
+  { symbol: "GOOGL", name: "Alphabet", market: "Stocks" as const },
+  { symbol: "META", name: "Meta", market: "Stocks" as const },
+  { symbol: "SPY", name: "S&P 500 ETF", market: "Stocks" as const },
+];
+
+const TF_TO_RES: Record<string, { resolution: string; days: number }> = {
+  "5m":  { resolution: "5",  days: 2 },
+  "15m": { resolution: "15", days: 5 },
+  "1H":  { resolution: "60", days: 14 },
+  "4H":  { resolution: "240", days: 60 },
+  "1D":  { resolution: "D",  days: 365 },
+};
 
 export default function Markets() {
-  const [active, setActive] = useState(watchlist[0]);
-  const series = useMemo(() => generateSeries(140, active.price, active.price * 0.012), [active]);
-  const tfs = ["1m", "5m", "15m", "1H", "4H", "1D", "1W"];
-  const [tf, setTf] = useState("4H");
+  const symbols = useMemo(() => UNIVERSE.map((u) => u.symbol), []);
+  const { quotes, loading } = useLiveQuotes(symbols, 15000);
+  const [activeSymbol, setActiveSymbol] = useState(UNIVERSE[0].symbol);
+  const active = UNIVERSE.find((u) => u.symbol === activeSymbol)!;
+  const q = quotes[activeSymbol];
+  const [tf, setTf] = useState("1H");
+  const tfCfg = TF_TO_RES[tf];
 
   return (
     <div className="p-4 md:p-6 space-y-5">
       <SectionHeader
         eyebrow="Markets"
         title="Charts & Markets"
-        subtitle="Multi-timeframe institutional charting with smart money overlays."
+        subtitle="Real-time quotes and candles powered by Finnhub."
         right={
           <Tabs defaultValue="all">
             <TabsList className="bg-muted/40">
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="fx">Forex</TabsTrigger>
-              <TabsTrigger value="cr">Crypto</TabsTrigger>
               <TabsTrigger value="eq">Stocks</TabsTrigger>
-              <TabsTrigger value="cm">Commodities</TabsTrigger>
+              <TabsTrigger value="cr" disabled>Crypto</TabsTrigger>
+              <TabsTrigger value="fx" disabled>Forex</TabsTrigger>
             </TabsList>
           </Tabs>
         }
       />
 
-      {/* Top tickers */}
+      {/* Top tickers (live) */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-        {watchlist.map((t) => (
-          <button key={t.symbol} onClick={() => setActive(t)} className="text-left">
-            <TickerCard symbol={t.symbol} name={t.name} price={t.price} changePct={t.changePct} compact className={active.symbol === t.symbol ? "border-primary/50 shadow-glow" : ""} />
-          </button>
-        ))}
+        {UNIVERSE.map((t) => {
+          const lq = quotes[t.symbol];
+          if (loading && !lq) return <Skeleton key={t.symbol} className="h-[72px] rounded-xl" />;
+          return (
+            <button key={t.symbol} onClick={() => setActiveSymbol(t.symbol)} className="text-left">
+              <TickerCard
+                symbol={t.symbol}
+                name={t.name}
+                price={lq?.price ?? 0}
+                changePct={lq?.changePct ?? 0}
+                compact
+                className={activeSymbol === t.symbol ? "border-primary/50 shadow-glow" : ""}
+              />
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-12 gap-4">
@@ -52,15 +85,17 @@ export default function Markets() {
                 <div className="font-display text-xl font-bold">{active.symbol}</div>
                 <div className="text-xs text-muted-foreground">{active.name} · {active.market}</div>
               </div>
-              <Badge className={cn("border", active.changePct >= 0 ? "bg-success/15 text-success border-success/30" : "bg-destructive/15 text-destructive border-destructive/30")}>
-                {active.changePct >= 0 ? "+" : ""}{active.changePct.toFixed(2)}%
-              </Badge>
+              {q && (
+                <Badge className={cn("border", (q.changePct ?? 0) >= 0 ? "bg-success/15 text-success border-success/30" : "bg-destructive/15 text-destructive border-destructive/30")}>
+                  {(q.changePct ?? 0) >= 0 ? "+" : ""}{(q.changePct ?? 0).toFixed(2)}%
+                </Badge>
+              )}
               <span className="font-mono text-2xl font-bold tabular-nums">
-                {active.price < 10 ? active.price.toFixed(4) : active.price.toLocaleString()}
+                {q?.price ? q.price.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}
               </span>
             </div>
             <div className="flex items-center gap-1">
-              {tfs.map((t) => (
+              {Object.keys(TF_TO_RES).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTf(t)}
@@ -80,42 +115,29 @@ export default function Markets() {
             </div>
           </div>
 
-          <div className="mt-4 relative rounded-xl border border-border bg-background/40 overflow-hidden" style={{ height: 460 }}>
-            {/* Grid */}
-            <svg className="absolute inset-0 w-full h-full opacity-30" preserveAspectRatio="none">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <line key={`h${i}`} x1="0" x2="100%" y1={`${(i + 1) * 14}%`} y2={`${(i + 1) * 14}%`} stroke="hsl(var(--border))" strokeDasharray="3 6" />
-              ))}
-              {Array.from({ length: 8 }).map((_, i) => (
-                <line key={`v${i}`} y1="0" y2="100%" x1={`${(i + 1) * 11}%`} x2={`${(i + 1) * 11}%`} stroke="hsl(var(--border))" strokeDasharray="3 6" />
-              ))}
-            </svg>
-            <div className="absolute inset-0 p-2">
-              <Sparkline data={series} positive={active.changePct >= 0} height={440} width={1200} strokeWidth={2} />
-            </div>
-            {/* AI annotation */}
-            <div className="absolute top-3 left-3 rounded-lg border border-secondary/40 bg-secondary/10 backdrop-blur px-2.5 py-1.5 text-[10px]">
+          <div className="mt-4 relative">
+            <CandleChart symbol={activeSymbol} resolution={tfCfg.resolution} days={tfCfg.days} height={460} />
+            <div className="absolute top-3 left-24 rounded-lg border border-secondary/40 bg-secondary/10 backdrop-blur px-2.5 py-1.5 text-[10px] pointer-events-none">
               <div className="flex items-center gap-1.5 text-secondary font-semibold uppercase tracking-widest">
                 <LineChart className="h-3 w-3" /> AI Annotation
               </div>
-              <div className="text-foreground/90 mt-0.5">Bullish FVG fill + order block reaction</div>
+              <div className="text-foreground/90 mt-0.5">Live candles · Finnhub feed</div>
             </div>
-            {/* Order block overlay */}
-            <div className="absolute left-[60%] right-[20%] top-[55%] h-12 rounded border border-bull/40 bg-bull/10" />
-            <div className="absolute left-[40%] right-[55%] top-[35%] h-8 rounded border border-bear/40 bg-bear/10" />
           </div>
 
-          {/* Indicator strip */}
+          {/* Quote strip */}
           <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2">
             {[
-              { l: "RSI(14)", v: "62.4", c: "text-success" },
-              { l: "MACD", v: "Bullish", c: "text-success" },
-              { l: "VWAP", v: "Above", c: "text-primary" },
-              { l: "ATR(14)", v: "0.0042", c: "text-warning" },
+              { l: "Open", v: q?.open },
+              { l: "High", v: q?.high },
+              { l: "Low", v: q?.low },
+              { l: "Prev Close", v: q?.prevClose },
             ].map((s) => (
               <div key={s.l} className="rounded-md border border-border bg-background/40 px-3 py-2 flex items-center justify-between">
                 <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{s.l}</span>
-                <span className={cn("font-mono text-sm font-semibold", s.c)}>{s.v}</span>
+                <span className="font-mono text-sm font-semibold tabular-nums">
+                  {s.v ? s.v.toLocaleString(undefined, { maximumFractionDigits: 2 }) : "—"}
+                </span>
               </div>
             ))}
           </div>
@@ -134,8 +156,8 @@ export default function Markets() {
           <div className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between text-xs text-muted-foreground"><span>Bid</span><span>Ask</span></div>
             <div className="flex justify-between font-mono">
-              <span className="text-bear">{(active.price * 0.999).toFixed(2)}</span>
-              <span className="text-bull">{(active.price * 1.001).toFixed(2)}</span>
+              <span className="text-bear">{q?.price ? (q.price * 0.999).toFixed(2) : "—"}</span>
+              <span className="text-bull">{q?.price ? (q.price * 1.001).toFixed(2) : "—"}</span>
             </div>
             <div className="space-y-1.5 mt-2">
               <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Size</label>
