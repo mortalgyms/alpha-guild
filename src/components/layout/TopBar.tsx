@@ -1,5 +1,5 @@
-import { Bell, Search, Command } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Bell, Search, Command, LogOut, User as UserIcon } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { notifications } from "@/lib/mockData";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function TopBar() {
   const unread = notifications.filter((n) => n.unread).length;
+  const { user, signOut } = useAuth();
+  const nav = useNavigate();
+  const initials = (user?.user_metadata?.display_name || user?.email || "U").slice(0, 2).toUpperCase();
+  const name = user?.user_metadata?.display_name || user?.email?.split("@")[0] || "Trader";
 
   return (
     <header className="sticky top-0 z-30 h-14 border-b border-border bg-background/70 backdrop-blur-xl">
