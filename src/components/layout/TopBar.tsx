@@ -92,18 +92,32 @@ export function TopBar() {
           </DropdownMenu>
 
           {/* Profile chip */}
-          <Link
-            to="/profile"
-            className="flex items-center gap-2 rounded-full border border-border bg-card/60 pl-1 pr-3 py-1 hover:border-primary/40 transition-colors"
-          >
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-primary text-[11px] font-bold text-primary-foreground">
-              AC
-            </div>
-            <div className="hidden sm:flex flex-col leading-tight">
-              <span className="text-xs font-semibold">Alex Chen</span>
-              <span className="text-[9px] uppercase tracking-widest text-primary">Strategist</span>
-            </div>
-          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-full border border-border bg-card/60 pl-1 pr-3 py-1 hover:border-primary/40 transition-colors">
+                <div className="grid h-7 w-7 place-items-center rounded-full bg-gradient-primary text-[11px] font-bold text-primary-foreground">
+                  {initials}
+                </div>
+                <div className="hidden sm:flex flex-col leading-tight text-left">
+                  <span className="text-xs font-semibold">{name}</span>
+                  <span className="text-[9px] uppercase tracking-widest text-primary">Strategist</span>
+                </div>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48 glass-strong">
+              <DropdownMenuLabel className="text-xs truncate">{user?.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/profile"><UserIcon className="h-3.5 w-3.5 mr-2" />Profile</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={async () => { await signOut(); nav("/auth"); }}
+              >
+                <LogOut className="h-3.5 w-3.5 mr-2" />Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
