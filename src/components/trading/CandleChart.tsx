@@ -17,9 +17,18 @@ export function CandleChart({ symbol, resolution = "60", days = 30, height = 460
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setErr(null);
     fetchCandles(symbol, resolution, days)
-      .then((d) => !cancelled && setData(d))
-      .catch((e) => !cancelled && setErr(e.message))
+      .then((d) => {
+        if (cancelled) return;
+        setData(d);
+        setErr(null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setData(null);
+        setErr(e.message);
+      })
       .finally(() => !cancelled && setLoading(false));
     return () => { cancelled = true; };
   }, [symbol, resolution, days]);
@@ -47,7 +56,7 @@ export function CandleChart({ symbol, resolution = "60", days = 30, height = 460
       >
         {err
           ? `Chart unavailable: ${err}`
-          : `No candle data for ${symbol} (Finnhub free plan limits some symbols).`}
+          : `No candle data for ${symbol}.`}
       </div>
     );
   }

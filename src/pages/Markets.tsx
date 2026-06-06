@@ -5,20 +5,31 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Crosshair, Layers, LineChart, Maximize2, Settings2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLiveQuotes } from "@/hooks/useLiveQuotes";
 import { Skeleton } from "@/components/ui/skeleton";
 
+type MarketType = "Stocks" | "Crypto" | "Forex";
+type MarketFilter = "all" | MarketType;
+
 const UNIVERSE = [
-  { symbol: "AAPL", name: "Apple", market: "Stocks" as const },
-  { symbol: "NVDA", name: "NVIDIA", market: "Stocks" as const },
-  { symbol: "MSFT", name: "Microsoft", market: "Stocks" as const },
-  { symbol: "TSLA", name: "Tesla", market: "Stocks" as const },
-  { symbol: "AMZN", name: "Amazon", market: "Stocks" as const },
-  { symbol: "GOOGL", name: "Alphabet", market: "Stocks" as const },
-  { symbol: "META", name: "Meta", market: "Stocks" as const },
-  { symbol: "SPY", name: "S&P 500 ETF", market: "Stocks" as const },
+  { symbol: "AAPL", name: "Apple", market: "Stocks" as MarketType },
+  { symbol: "NVDA", name: "NVIDIA", market: "Stocks" as MarketType },
+  { symbol: "MSFT", name: "Microsoft", market: "Stocks" as MarketType },
+  { symbol: "TSLA", name: "Tesla", market: "Stocks" as MarketType },
+  { symbol: "AMZN", name: "Amazon", market: "Stocks" as MarketType },
+  { symbol: "GOOGL", name: "Alphabet", market: "Stocks" as MarketType },
+  { symbol: "META", name: "Meta", market: "Stocks" as MarketType },
+  { symbol: "SPY", name: "S&P 500 ETF", market: "Stocks" as MarketType },
+  { symbol: "BTCUSD", name: "Bitcoin / USD", market: "Crypto" as MarketType },
+  { symbol: "ETHUSD", name: "Ethereum / USD", market: "Crypto" as MarketType },
+  { symbol: "SOLUSD", name: "Solana / USD", market: "Crypto" as MarketType },
+  { symbol: "XRPUSD", name: "XRP / USD", market: "Crypto" as MarketType },
+  { symbol: "EURUSD", name: "Euro / US Dollar", market: "Forex" as MarketType },
+  { symbol: "GBPUSD", name: "British Pound / US Dollar", market: "Forex" as MarketType },
+  { symbol: "USDJPY", name: "US Dollar / Japanese Yen", market: "Forex" as MarketType },
+  { symbol: "AUDUSD", name: "Australian Dollar / US Dollar", market: "Forex" as MarketType },
 ];
 
 const TF_TO_RES: Record<string, { resolution: string; days: number }> = {
@@ -30,7 +41,12 @@ const TF_TO_RES: Record<string, { resolution: string; days: number }> = {
 };
 
 export default function Markets() {
-  const symbols = useMemo(() => UNIVERSE.map((u) => u.symbol), []);
+  const [marketFilter, setMarketFilter] = useState<MarketFilter>("all");
+  const filteredUniverse = useMemo(
+    () => marketFilter === "all" ? UNIVERSE : UNIVERSE.filter((u) => u.market === marketFilter),
+    [marketFilter]
+  );
+  const symbols = useMemo(() => filteredUniverse.map((u) => u.symbol), [filteredUniverse]);
   const { quotes, loading } = useLiveQuotes(symbols, 15000);
   const [activeSymbol, setActiveSymbol] = useState(UNIVERSE[0].symbol);
   const active = UNIVERSE.find((u) => u.symbol === activeSymbol)!;
@@ -38,19 +54,25 @@ export default function Markets() {
   const [tf, setTf] = useState("1H");
   const tfCfg = TF_TO_RES[tf];
 
+  useEffect(() => {
+    if (!filteredUniverse.some((u) => u.symbol === activeSymbol)) {
+      setActiveSymbol(filteredUniverse[0].symbol);
+    }
+  }, [activeSymbol, filteredUniverse]);
+
   return (
     <div className="p-4 md:p-6 space-y-5">
       <SectionHeader
         eyebrow="Markets"
         title="Charts & Markets"
-        subtitle="Real-time quotes and candles powered by Finnhub."
+        subtitle="Stocks, crypto, and forex with resilient quotes and candles."
         right={
-          <Tabs defaultValue="all">
+          <Tabs value={marketFilter} onValueChange={(value) => setMarketFilter(value as MarketFilter)}>
             <TabsList className="bg-muted/40">
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="eq">Stocks</TabsTrigger>
-              <TabsTrigger value="cr" disabled>Crypto</TabsTrigger>
-              <TabsTrigger value="fx" disabled>Forex</TabsTrigger>
+              <TabsTrigger value="Stocks">Stocks</TabsTrigger>
+              <TabsTrigger value="Crypto">Crypto</TabsTrigger>
+              <TabsTrigger value="Forex">Forex</TabsTrigger>
             </TabsList>
           </Tabs>
         }
@@ -58,7 +80,7 @@ export default function Markets() {
 
       {/* Top tickers (live) */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-        {UNIVERSE.map((t) => {
+        {filteredUniverse.map((t) => {
           const lq = quotes[t.symbol];
           if (loading && !lq) return <Skeleton key={t.symbol} className="h-[72px] rounded-xl" />;
           return (
@@ -121,7 +143,7 @@ export default function Markets() {
               <div className="flex items-center gap-1.5 text-secondary font-semibold uppercase tracking-widest">
                 <LineChart className="h-3 w-3" /> AI Annotation
               </div>
-              <div className="text-foreground/90 mt-0.5">Live candles · Finnhub feed</div>
+              <div className="text-foreground/90 mt-0.5">Live candles · resilient feed</div>
             </div>
           </div>
 
