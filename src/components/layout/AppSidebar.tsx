@@ -13,6 +13,7 @@ import {
   Bell,
   Settings,
   Zap,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -58,7 +59,7 @@ export function AppSidebar() {
   const { pathname } = useLocation();
   const isActive = (path: string) => (path === "/" ? pathname === "/" : pathname.startsWith(path));
 
-  const renderItem = (item: { title: string; url: string; icon: any }) => (
+  const renderItem = (item: { title: string; url: string; icon: LucideIcon }) => (
     <SidebarMenuItem key={item.title}>
       <SidebarMenuButton asChild isActive={isActive(item.url)}>
         <NavLink

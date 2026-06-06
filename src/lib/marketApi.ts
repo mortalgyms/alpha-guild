@@ -17,6 +17,18 @@ export type Candles = {
   c: number[]; h: number[]; l: number[]; o: number[]; t: number[]; v: number[]; s: string;
 };
 
+export type MarketNewsItem = {
+  category?: string;
+  datetime?: number;
+  headline?: string;
+  id?: number;
+  image?: string;
+  related?: string;
+  source?: string;
+  summary?: string;
+  url?: string;
+};
+
 type AssetKind = "stock" | "crypto" | "forex";
 
 type SymbolMeta = {
@@ -86,7 +98,7 @@ export async function fetchCandles(symbol: string, resolution = "60", days = 30)
 }
 
 export async function fetchMarketNews(category = "general") {
-  return call<any[]>({ action: "news", category });
+  return call<MarketNewsItem[]>({ action: "news", category });
 }
 
 export async function searchSymbols(q: string) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fetchQuotes, type LiveQuote } from "@/lib/marketApi";
 
 // Finnhub symbol notes:
@@ -9,14 +9,16 @@ export function useLiveQuotes(symbols: string[], intervalMs = 15000) {
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const symbolKey = symbols.join(",");
+  const stableSymbols = useMemo(() => symbolKey.split(",").filter(Boolean), [symbolKey]);
 
   useEffect(() => {
-    if (!symbols.length) return;
+    if (!stableSymbols.length) return;
     let cancelled = false;
 
     const tick = async () => {
       try {
-        const data = await fetchQuotes(symbols);
+        const data = await fetchQuotes(stableSymbols);
         if (cancelled) return;
         const map: Record<string, LiveQuote> = {};
         for (const q of data) map[q.symbol] = q;
@@ -35,7 +37,7 @@ export function useLiveQuotes(symbols: string[], intervalMs = 15000) {
       cancelled = true;
       clearInterval(id);
     };
-  }, [symbols.join(","), intervalMs]);
+  }, [stableSymbols, intervalMs]);
 
   return { quotes, loading, error };
 }
