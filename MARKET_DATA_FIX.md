@@ -9,9 +9,12 @@ This build fixes two Markets page issues:
 
 The frontend now tries providers in this order:
 
-1. Supabase Edge Function `market-data`
-2. Alpha Vantage browser fallback
-3. Local synthetic fallback so the UI remains usable
+1. Optional Finnhub WebSocket overlay for subscribed live trade updates when `VITE_FINNHUB_WS_TOKEN` is configured.
+2. Supabase Edge Function `market-data` for Finnhub REST quotes/candles.
+3. Alpha Vantage browser fallback.
+4. Local synthetic fallback so the UI remains usable.
+
+Every quote and candle response now carries provider, source timestamp, received timestamp, local timestamp, delay, and freshness status metadata.
 
 ## Vercel Environment Variable
 
@@ -19,10 +22,15 @@ For real Alpha Vantage fallback data, set this in Vercel:
 
 ```env
 VITE_ALPHA_VANTAGE_API_KEY=your-alpha-vantage-key
+VITE_FINNHUB_WS_TOKEN=your-finnhub-token
 ```
 
-This key is visible in frontend JavaScript because Vite exposes `VITE_` variables to the browser. For production-grade secrecy, move Alpha Vantage calls into the Supabase Edge Function and store the key as a Supabase function secret.
+These keys are visible in frontend JavaScript because Vite exposes `VITE_` variables to the browser. For production-grade secrecy, move provider calls into the Supabase Edge Function and store provider keys as Supabase function secrets.
 
 ## Supabase Edge Function
 
 The Edge Function CORS helper was made local so the function does not rely on a remote CORS import.
+
+## Signals
+
+Signals are no longer mock data. The signal engine rejects simulated, stale, unknown, or delayed market data before calculating entry, stop, target, ATR, trend alignment, risk/reward, and confidence.
